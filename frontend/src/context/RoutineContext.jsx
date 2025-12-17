@@ -161,16 +161,22 @@ export const RoutineProvider = ({ children }) => {
             return false;
         }
 
-        if (Notification.permission === 'granted') {
-            setNotificationsEnabled(true);
-            return true;
+        // Always request permission explicitly to trigger the prompt
+        // if it hasn't been denied
+        if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            if (permission === 'granted') {
+                setNotificationsEnabled(true);
+                // Send a test notification immediately to confirm
+                new Notification('Habbita Notifications Enabled! 🎉');
+                return true;
+            }
         }
 
-        const permission = await Notification.requestPermission();
-        if (permission === 'granted') {
-            setNotificationsEnabled(true);
-            return true;
+        if (Notification.permission === 'denied') {
+            alert('Notifications are blocked. Please enable them in your browser settings.');
         }
+
         return false;
     };
 

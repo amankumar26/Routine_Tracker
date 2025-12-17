@@ -19,7 +19,7 @@ const Layout = ({ children, onAddRoutine }) => {
             {/* Sidebar */}
             <aside className="hidden sm:flex w-20 lg:w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex-col items-center lg:items-start py-8 transition-all duration-300">
                 <div className="mb-12 px-4 lg:px-8 flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 hidden lg:block">Routine</h1>
+                    <h1 className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 hidden lg:block">Habbita</h1>
                     <button
                         onClick={toggleDarkMode}
                         className="p-2 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"

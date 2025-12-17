@@ -12,8 +12,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
       manifest: {
-        name: 'Routine Tracker',
-        short_name: 'RoutineTracker',
+        name: 'Habbita',
+        short_name: 'Habbita',
         description: 'Track your daily routines and build healthy habits.',
         theme_color: '#ffffff',
         icons: [

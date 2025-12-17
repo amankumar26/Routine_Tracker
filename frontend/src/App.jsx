@@ -4,6 +4,7 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
+
 import AddRoutineModal from './components/AddRoutineModal';
 import { RoutineProvider, useRoutine } from './context/RoutineContext';
 

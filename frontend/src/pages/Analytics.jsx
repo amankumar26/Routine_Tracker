@@ -182,27 +182,65 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                {/* Routine Streaks Horizontal Bar */}
+                {/* Routine Habits Performance List */}
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2 transition-colors duration-300">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Current Streaks</h3>
-                    <div className="h-64 w-full" style={{ minHeight: '250px' }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <BarChart layout="vertical" data={routinePerformance} margin={{ left: 20 }}>
-                                <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f0f0f0" className="dark:stroke-gray-700" />
-                                <XAxis type="number" hide />
-                                <YAxis
-                                    dataKey="name"
-                                    type="category"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    width={100}
-                                    tick={{ fill: '#4b5563', fontSize: 13, fontWeight: 500 }}
-                                    className="dark:fill-gray-400"
-                                />
-                                <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: '#fff' }} />
-                                <Bar dataKey="streak" fill="#ec4899" radius={[0, 6, 6, 0]} barSize={24} background={{ fill: '#f9fafb', radius: [0, 6, 6, 0] }} className="dark:fill-gray-700" />
-                            </BarChart>
-                        </ResponsiveContainer>
+                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Habit Performance</h3>
+                    <div className="space-y-6">
+                        {routines.map(routine => {
+                            // Calculate Consistency (Last 30 Days)
+                            const history = routine.history || [];
+                            const today = new Date();
+                            let completedCount = 0;
+                            // Check last 30 days
+                            for (let i = 0; i < 30; i++) {
+                                const dateStr = format(subDays(today, i), 'yyyy-MM-dd');
+                                if (history.includes(dateStr)) {
+                                    completedCount++;
+                                }
+                            }
+                            const consistency = Math.round((completedCount / 30) * 100);
+
+                            return (
+                                <div key={routine.id} className="relative">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-xl">
+                                                {routine.icon}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-semibold text-gray-900 dark:text-white">{routine.title}</h4>
+                                                <p className="text-xs text-gray-500 dark:text-gray-400">Target: Daily</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="flex items-center justify-end gap-2 mb-1">
+                                                <span className="text-orange-500 font-bold flex items-center gap-1">
+                                                    {routine.streak} 🔥
+                                                </span>
+                                                <span className="text-gray-300 dark:text-gray-600">|</span>
+                                                <span className={`font-bold ${consistency >= 80 ? 'text-green-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                    {consistency}%
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-400 dark:text-gray-500">Consistency (30d)</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Progress Bar */}
+                                    <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${consistency}%` }}
+                                            transition={{ duration: 1, ease: "easeOut" }}
+                                            className={`h-full rounded-full ${consistency >= 80 ? 'bg-green-500' :
+                                                    consistency >= 50 ? 'bg-indigo-500' :
+                                                        'bg-indigo-400 opacity-70'
+                                                }`}
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
 

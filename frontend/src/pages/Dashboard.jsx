@@ -13,8 +13,10 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [routineToEdit, setRoutineToEdit] = React.useState(null);
 
-    // Filter out deleted routines for display and current stats
-    const activeRoutines = routines.filter(r => !r.deleted);
+    // Filter out deleted routines and sort: Incomplete first, then Completed
+    const activeRoutines = routines
+        .filter(r => !r.deleted)
+        .sort((a, b) => Number(a.completedToday) - Number(b.completedToday));
 
     const completedCount = activeRoutines.filter(r => r.completedToday).length;
     const totalCount = activeRoutines.length;

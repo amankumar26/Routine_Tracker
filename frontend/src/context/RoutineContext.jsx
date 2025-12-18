@@ -17,15 +17,16 @@ export const RoutineProvider = ({ children }) => {
                 icon: '🏃',
                 streak: 5,
                 completedToday: false,
+                startDate: '2023-10-01',
                 history: ['2023-10-20', '2023-10-21', '2023-10-22', '2023-10-23', '2023-10-24'],
                 subtasks: [
                     { id: 1, title: 'Wear running shoes', completed: false },
                     { id: 2, title: 'Warm up', completed: false }
                 ]
             },
-            { id: 2, title: 'Read Book', time: '09:00 PM', icon: '📖', streak: 12, completedToday: false, history: [], subtasks: [] },
-            { id: 3, title: 'Drink Water', time: 'All Day', icon: '💧', streak: 2, completedToday: false, history: [], subtasks: [] },
-            { id: 4, title: 'Code', time: '10:00 AM', icon: '💻', streak: 30, completedToday: false, history: [], subtasks: [] },
+            { id: 2, title: 'Read Book', time: '09:00 PM', icon: '📖', streak: 12, completedToday: false, startDate: '2023-10-01', history: [], subtasks: [] },
+            { id: 3, title: 'Drink Water', time: 'All Day', icon: '💧', streak: 2, completedToday: false, startDate: '2023-10-01', history: [], subtasks: [] },
+            { id: 4, title: 'Code', time: '10:00 AM', icon: '💻', streak: 30, completedToday: false, startDate: '2023-10-01', history: [], subtasks: [] },
         ];
     });
 
@@ -120,6 +121,7 @@ export const RoutineProvider = ({ children }) => {
             id: Date.now(),
             streak: 0,
             completedToday: false,
+            startDate: format(new Date(), 'yyyy-MM-dd'),
             history: [],
             icon: newRoutine.icon || '✨',
             subtasks: newRoutine.subtasks || []

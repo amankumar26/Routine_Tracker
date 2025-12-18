@@ -7,6 +7,15 @@
   font-weight: 400;
 }
 
+/* Global Reset for Outlines/Tap Highlights */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus {
+  outline: none;
+}
+
 body {
   margin: 0;
   min-width: 320px;

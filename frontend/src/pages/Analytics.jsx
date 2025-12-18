@@ -8,6 +8,7 @@ import { X, CheckCircle2, Circle, Trophy } from 'lucide-react';
 const Analytics = () => {
     const { routines } = useRoutine();
     const [selectedDate, setSelectedDate] = React.useState(null);
+    const [showInfo, setShowInfo] = React.useState(false);
 
     // --- Data Preparation for Charts ---
 
@@ -34,14 +35,72 @@ const Analytics = () => {
         day.completed = count;
     });
 
-    // 2. Monthly Consistency (Mock Data for visual wow factor if history is empty)
-    // In a real scenario, we'd map real history.
-    const monthlyData = [
-        { name: 'Week 1', value: 65 },
-        { name: 'Week 2', value: 80 },
-        { name: 'Week 3', value: 45 },
-        { name: 'Week 4', value: 90 },
-    ];
+    // 2. Monthly Consistency (Real Data)
+    const monthlyData = (() => {
+        const today = new Date();
+        const start = startOfMonth(today);
+        const end = endOfMonth(today);
+
+        // Get all weeks in the current month
+        const weeks = [];
+        let currentIterDate = start;
+
+        // Loop to find week starts
+        while (currentIterDate <= end) {
+            const weekStart = startOfWeek(currentIterDate, { weekStartsOn: 1 }); // Monday start
+            const weekEnd = endOfWeek(currentIterDate, { weekStartsOn: 1 });
+
+            // Avoid duplicates if iteration steps small
+            const weekLabel = `Week ${weeks.length + 1}`;
+            if (!weeks.some(w => w.name === weekLabel)) {
+
+                // Calculate completion for this week
+                let completedCount = 0;
+                let totalPossible = 0;
+
+                // Iterate days in this week
+                let dayIter = weekStart;
+                while (dayIter <= weekEnd) {
+                    // Only count days up to today to avoid skewing future data with 0s
+                    // But for "Trends" sometimes seeing 0 is correct for future. 
+                    // Let's count all days in month to behave like a standard calendar view
+                    if (dayIter > end) break; // Don't go into next month visually if strictly monthly
+
+                    const dayStr = format(dayIter, 'yyyy-MM-dd');
+
+                    routines.forEach(routine => {
+                        // Check if routine existed on this day (or default to true if no startDate for legacy)
+                        const routineStartDate = routine.startDate || '2000-01-01';
+
+                        if (dayStr >= routineStartDate) {
+                            // Count potential for this day
+                            totalPossible++;
+                            // Count actual
+                            if (routine.history && routine.history.includes(dayStr)) {
+                                completedCount++;
+                            }
+                        }
+                    });
+
+                    dayIter = new Date(dayIter.setDate(dayIter.getDate() + 1));
+                }
+
+                // If totalPossible is 0 (no routines), avoid NaN
+                const percentage = totalPossible > 0 ? Math.round((completedCount / totalPossible) * 100) : 0;
+
+                weeks.push({
+                    name: weekLabel,
+                    value: percentage
+                });
+            }
+
+            // Jump to next week
+            currentIterDate = new Date(weekEnd);
+            currentIterDate.setDate(currentIterDate.getDate() + 1);
+        }
+
+        return weeks;
+    })();
 
     // 3. Routine Specific Performance
     const routinePerformance = routines.map(r => ({
@@ -90,8 +149,56 @@ const Analytics = () => {
                 </div>
 
                 {/* Monthly Trend Area Chart */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Monthly Trend</h3>
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300 relative">
+                    <div className="flex items-start justify-between mb-6">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                                Monthly Trend
+                                <div className="relative">
+                                    <button
+                                        onClick={() => setShowInfo(!showInfo)}
+                                        className="text-gray-400 hover:text-indigo-500 transition-colors focus:outline-none"
+                                        aria-label="Show chart info"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>
+                                    </button>
+                                    <AnimatePresence>
+                                        {showInfo && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 w-48 p-3 bg-gray-900/95 dark:bg-gray-700/95 backdrop-blur-sm text-white text-xs rounded-xl shadow-xl z-20 text-center"
+                                            >
+                                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-gray-900/95 dark:bg-gray-700/95 rotate-45"></div>
+                                                Shows your weekly habit completion rate percentage.
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            </h3>
+                            {/* Dynamic Insight */}
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {(() => {
+                                    if (monthlyData.length === 0) return "No data available yet.";
+                                    const bestWeek = [...monthlyData].sort((a, b) => b.value - a.value)[0];
+                                    const currentWeek = monthlyData[monthlyData.length - 1];
+
+                                    if (bestWeek.value === 0) return "Start tracking your habits to see trends!";
+
+                                    if (currentWeek.name === bestWeek.name) {
+                                        return `🔥 You're on fire! This week is your best yet (${bestWeek.value}%).`;
+                                    } else {
+                                        return `Aim to beat your best: ${bestWeek.name} (${bestWeek.value}%).`;
+                                    }
+                                })()}
+                            </p>
+                        </div>
+                        <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/20 px-3 py-1 rounded-full">
+                            {format(new Date(), 'MMMM')}
+                        </span>
+                    </div>
+
                     <div className="h-64 w-full" style={{ minHeight: '250px' }}>
                         <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             <AreaChart data={monthlyData}>
@@ -102,9 +209,36 @@ const Analytics = () => {
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" className="dark:stroke-gray-700" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: '#fff' }} />
-                                <Area type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
+                                    dy={10}
+                                />
+                                <YAxis
+                                    hide={false}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#9ca3af', fontSize: 10 }}
+                                    domain={[0, 100]}
+                                    unit="%"
+                                    width={30}
+                                />
+                                <Tooltip
+                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: '#fff' }}
+                                    formatter={(value) => [`${value}%`, 'Completion Rate']}
+                                    labelStyle={{ color: '#6b7280', marginBottom: '0.25rem' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="value"
+                                    stroke="#8b5cf6"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorValue)"
+                                    activeDot={{ r: 6, strokeWidth: 0 }}
+                                />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
@@ -233,8 +367,8 @@ const Analytics = () => {
                                             animate={{ width: `${consistency}%` }}
                                             transition={{ duration: 1, ease: "easeOut" }}
                                             className={`h-full rounded-full ${consistency >= 80 ? 'bg-green-500' :
-                                                    consistency >= 50 ? 'bg-indigo-500' :
-                                                        'bg-indigo-400 opacity-70'
+                                                consistency >= 50 ? 'bg-indigo-500' :
+                                                    'bg-indigo-400 opacity-70'
                                                 }`}
                                         />
                                     </div>
@@ -284,10 +418,25 @@ const Analytics = () => {
                             {/* Stats */}
                             {(() => {
                                 const dateStr = format(selectedDate, 'yyyy-MM-dd');
-                                const totalRoutines = routines.length;
-                                const completedRoutines = routines.filter(r => r.history && r.history.includes(dateStr));
+
+                                // Filter routines that existed on this date
+                                const activeRoutinesForDay = routines.filter(r => {
+                                    const startDate = r.startDate || '2000-01-01';
+                                    return dateStr >= startDate;
+                                });
+
+                                const activeTotal = activeRoutinesForDay.length;
+                                const completedRoutines = activeRoutinesForDay.filter(r => r.history && r.history.includes(dateStr));
                                 const completedCount = completedRoutines.length;
-                                const percentage = totalRoutines > 0 ? Math.round((completedCount / totalRoutines) * 100) : 0;
+                                const percentage = activeTotal > 0 ? Math.round((completedCount / activeTotal) * 100) : 0;
+
+                                if (activeTotal === 0) {
+                                    return (
+                                        <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                                            <p>No habits were active on this date.</p>
+                                        </div>
+                                    );
+                                }
 
                                 return (
                                     <>
@@ -308,14 +457,14 @@ const Analytics = () => {
                                                     {percentage === 100 ? 'Perfect Day! 🎉' : percentage >= 50 ? 'Great Progress! 🚀' : 'Keep Going! 💪'}
                                                 </h4>
                                                 <p className="text-sm text-gray-600 dark:text-gray-300">
-                                                    You completed <span className="font-semibold text-indigo-600 dark:text-indigo-400">{completedCount}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{totalRoutines}</span> habits.
+                                                    You completed <span className="font-semibold text-indigo-600 dark:text-indigo-400">{completedCount}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{activeTotal}</span> habits.
                                                 </p>
                                             </div>
                                         </div>
 
                                         {/* Routine List */}
                                         <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                                            {routines.map(routine => {
+                                            {activeRoutinesForDay.map(routine => {
                                                 const isCompleted = routine.history && routine.history.includes(dateStr);
                                                 return (
                                                     <div

@@ -13,8 +13,11 @@ const Dashboard = () => {
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [routineToEdit, setRoutineToEdit] = React.useState(null);
 
-    const completedCount = routines.filter(r => r.completedToday).length;
-    const totalCount = routines.length;
+    // Filter out deleted routines for display and current stats
+    const activeRoutines = routines.filter(r => !r.deleted);
+
+    const completedCount = activeRoutines.filter(r => r.completedToday).length;
+    const totalCount = activeRoutines.length;
     const progress = totalCount === 0 ? 0 : (completedCount / totalCount) * 100;
 
     const handleAddRoutine = (newRoutine) => {
@@ -220,7 +223,7 @@ const Dashboard = () => {
                 <h2 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-6">Your Routines</h2>
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
                     <AnimatePresence>
-                        {routines.map(routine => (
+                        {activeRoutines.map(routine => (
                             <RoutineCard
                                 key={routine.id}
                                 routine={routine}

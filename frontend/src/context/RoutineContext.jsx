@@ -122,6 +122,7 @@ export const RoutineProvider = ({ children }) => {
             streak: 0,
             completedToday: false,
             startDate: format(new Date(), 'yyyy-MM-dd'),
+            deleted: false,
             history: [],
             icon: newRoutine.icon || '✨',
             subtasks: newRoutine.subtasks || []
@@ -129,7 +130,12 @@ export const RoutineProvider = ({ children }) => {
     };
 
     const deleteRoutine = (id) => {
-        setRoutines(prev => prev.filter(r => r.id !== id));
+        const today = format(new Date(), 'yyyy-MM-dd');
+        setRoutines(prev => prev.map(r =>
+            r.id === id
+                ? { ...r, deleted: true, deletedAt: today }
+                : r
+        ));
     };
 
     const editRoutine = (updatedRoutine) => {

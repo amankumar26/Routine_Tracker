@@ -1,6 +1,6 @@
 import React from 'react';
 import { useRoutine } from '../context/RoutineContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, Cell } from 'recharts';
 import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Circle, Trophy } from 'lucide-react';
@@ -15,25 +15,39 @@ const Analytics = () => {
     // 1. Weekly Completion Data (Last 7 Days)
     const last7Days = Array.from({ length: 7 }, (_, i) => {
         const d = subDays(new Date(), 6 - i);
+        const dayStr = format(d, 'yyyy-MM-dd');
+
+        let completed = 0;
+        let total = 0;
+
+        routines.forEach(routine => {
+            const routineStartDate = routine.startDate || '2000-01-01';
+            const isDeleted = routine.deleted;
+            const deletedAt = routine.deletedAt;
+
+            // Active if date is >= start date AND (not deleted OR date <= deleted date)
+            if (dayStr >= routineStartDate && (!isDeleted || dayStr <= deletedAt)) {
+                total++;
+                if (routine.history && routine.history.includes(dayStr)) {
+                    completed++;
+                }
+            }
+        });
+
         return {
-            date: format(d, 'EEE'), // Mon, Tue, etc.
-            fullDate: format(d, 'yyyy-MM-dd'),
-            completed: 0
+            date: format(d, 'EEE'),
+            fullDate: dayStr,
+            completed,
+            total,
+            percentage: total > 0 ? Math.round((completed / total) * 100) : 0
         };
     });
 
-    // Calculate completions for each day in the last 7 days
-    // Note: In a real app with a backend, we'd query this. 
-    // Here we have to iterate through all routines and their history.
-    last7Days.forEach(day => {
-        let count = 0;
-        routines.forEach(routine => {
-            if (routine.history && routine.history.includes(day.fullDate)) {
-                count++;
-            }
-        });
-        day.completed = count;
-    });
+    const weeklyStats = (() => {
+        const avg = Math.round(last7Days.reduce((acc, curr) => acc + curr.percentage, 0) / 7);
+        const bestDay = [...last7Days].sort((a, b) => b.percentage - a.percentage)[0];
+        return { avg, bestDay };
+    })();
 
     // 2. Monthly Consistency (Real Data)
     const monthlyData = (() => {
@@ -69,10 +83,17 @@ const Analytics = () => {
                     const dayStr = format(dayIter, 'yyyy-MM-dd');
 
                     routines.forEach(routine => {
-                        // Check if routine existed on this day (or default to true if no startDate for legacy)
+                        // Check if routine existed on this day
                         const routineStartDate = routine.startDate || '2000-01-01';
+                        const isDeleted = routine.deleted;
+                        const deletedAt = routine.deletedAt;
 
-                        if (dayStr >= routineStartDate) {
+                        // It is a valid potential habit if:
+                        // 1. We are past/on its start date
+                        // 2. AND (it's not deleted OR it was deleted AFTER this day)
+                        const isActiveOnDate = dayStr >= routineStartDate && (!isDeleted || dayStr <= deletedAt);
+
+                        if (isActiveOnDate) {
                             // Count potential for this day
                             totalPossible++;
                             // Count actual
@@ -102,8 +123,8 @@ const Analytics = () => {
         return weeks;
     })();
 
-    // 3. Routine Specific Performance
-    const routinePerformance = routines.map(r => ({
+    // 3. Routine Specific Performance (Only active routines)
+    const routinePerformance = routines.filter(r => !r.deleted).map(r => ({
         name: r.title,
         streak: r.streak,
         total: r.history ? r.history.length : 0
@@ -119,32 +140,89 @@ const Analytics = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
                 {/* Weekly Activity Chart */}
-                <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 transition-colors duration-300">
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Weekly Activity</h3>
-                    <div className="h-64 w-full" style={{ minHeight: '250px' }}>
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                            <BarChart data={last7Days}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" className="dark:stroke-gray-700" />
-                                <XAxis
-                                    dataKey="date"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#9ca3af', fontSize: 12 }}
-                                    dy={10}
-                                />
-                                <Tooltip
-                                    cursor={{ fill: '#f3f4f6' }}
-                                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', backgroundColor: '#fff' }}
-                                    className="dark:bg-gray-900 dark:text-gray-100"
-                                />
-                                <Bar
-                                    dataKey="completed"
-                                    fill="#6366f1"
-                                    radius={[6, 6, 0, 0]}
-                                    barSize={32}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden relative group">
+                    {/* Decorative Gradient Blob */}
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none"></div>
+
+                    <div className="p-6 md:p-8 relative z-10">
+                        <div className="flex items-end justify-between mb-6">
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200">Weekly Activity</h3>
+                                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                    Your average consistency is <span className="font-bold text-indigo-500">{weeklyStats.avg}%</span> this week.
+                                </p>
+                            </div>
+                            {weeklyStats.avg > 0 && (
+                                <div className="text-right pb-0.5">
+                                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">Best Day</span>
+                                    <div className="flex items-center justify-end gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                        <p className="font-bold text-gray-800 dark:text-white leading-none">{weeklyStats.bestDay.date}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="h-64 w-full" style={{ minHeight: '250px' }}>
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <BarChart data={last7Days} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#6366f1" stopOpacity={1} />
+                                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" className="dark:stroke-gray-700/50" />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#9ca3af', fontSize: 11, fontWeight: 600 }}
+                                        dy={10}
+                                    />
+                                    <YAxis
+                                        hide
+                                        domain={[0, 100]}
+                                    />
+                                    <Tooltip
+                                        cursor={{ fill: 'transparent' }}
+                                        content={({ active, payload, label }) => {
+                                            if (active && payload && payload.length) {
+                                                const data = payload[0].payload;
+                                                return (
+                                                    <div className="bg-gray-900/90 dark:bg-gray-800/95 backdrop-blur text-white p-3 rounded-xl shadow-xl border border-gray-700/50 transform transition-all -translate-y-2">
+                                                        <p className="font-bold text-sm mb-1">{label}</p>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <div className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></div>
+                                                            <p className="text-lg font-bold text-indigo-300">
+                                                                {data.percentage}%
+                                                            </p>
+                                                        </div>
+                                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider font-medium">
+                                                            {data.completed} / {data.total} Habits
+                                                        </p>
+                                                    </div>
+                                                );
+                                            }
+                                            return null;
+                                        }}
+                                    />
+                                    <Bar
+                                        dataKey="percentage"
+                                        fill="url(#barGradient)"
+                                        radius={[8, 8, 8, 8]}
+                                        barSize={28}
+                                        animationDuration={1500}
+                                    >
+                                        {
+                                            last7Days.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fillOpacity={entry.percentage === 0 ? 0.2 : 1} />
+                                            ))
+                                        }
+                                    </Bar>
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
                     </div>
                 </div>
 
@@ -419,10 +497,14 @@ const Analytics = () => {
                             {(() => {
                                 const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-                                // Filter routines that existed on this date
+                                // Filter routines that existed on this date (and weren't deleted before it)
                                 const activeRoutinesForDay = routines.filter(r => {
                                     const startDate = r.startDate || '2000-01-01';
-                                    return dateStr >= startDate;
+                                    const isDeleted = r.deleted;
+                                    const deletedAt = r.deletedAt;
+
+                                    // Active if date is >= start date AND (not deleted OR date <= deleted date)
+                                    return dateStr >= startDate && (!isDeleted || dateStr <= deletedAt);
                                 });
 
                                 const activeTotal = activeRoutinesForDay.length;
@@ -506,7 +588,7 @@ const Analytics = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
 

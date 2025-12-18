@@ -2,9 +2,12 @@ import React from 'react';
 import { useRoutine } from '../context/RoutineContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
 import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, CheckCircle2, Circle, Trophy } from 'lucide-react';
 
 const Analytics = () => {
     const { routines } = useRoutine();
+    const [selectedDate, setSelectedDate] = React.useState(null);
 
     // --- Data Preparation for Charts ---
 
@@ -163,7 +166,9 @@ const Analytics = () => {
                                                     : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
                                                 }
                                                 ${isTodayDate && !isActive ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                                                cursor-pointer hover:scale-110
                                             `}
+                                            onClick={() => setSelectedDate(date)}
                                         >
                                             {format(date, 'd')}
                                             {isActive && (
@@ -202,6 +207,118 @@ const Analytics = () => {
                 </div>
 
             </div>
+
+            {/* Day Details Modal */}
+            <AnimatePresence>
+                {selectedDate && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setSelectedDate(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-md shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
+                        >
+                            {/* Header */}
+                            <div className="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+                                        {format(selectedDate, 'MMMM d, yyyy')}
+                                    </h3>
+                                    <p className="text-gray-500 dark:text-gray-400 text-sm">
+                                        {format(selectedDate, 'EEEE')}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedDate(null)}
+                                    className="p-2 bg-gray-100 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                    <X size={20} className="text-gray-600 dark:text-gray-300" />
+                                </button>
+                            </div>
+
+                            {/* Stats */}
+                            {(() => {
+                                const dateStr = format(selectedDate, 'yyyy-MM-dd');
+                                const totalRoutines = routines.length;
+                                const completedRoutines = routines.filter(r => r.history && r.history.includes(dateStr));
+                                const completedCount = completedRoutines.length;
+                                const percentage = totalRoutines > 0 ? Math.round((completedCount / totalRoutines) * 100) : 0;
+
+                                return (
+                                    <>
+                                        {/* Progress Card */}
+                                        <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl p-4 mb-6 flex items-center gap-4">
+                                            <div className="relative w-16 h-16 flex-shrink-0 flex items-center justify-center bg-white dark:bg-gray-800 rounded-full shadow-sm">
+                                                <span className={`text-xl font-bold ${percentage === 100 ? 'text-green-500' : 'text-indigo-600 dark:text-indigo-400'}`}>
+                                                    {percentage}%
+                                                </span>
+                                                {percentage === 100 && (
+                                                    <div className="absolute -top-1 -right-1 bg-yellow-400 text-white rounded-full p-1 shadow-sm">
+                                                        <Trophy size={12} fill="currentColor" />
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div>
+                                                <h4 className="font-bold text-gray-900 dark:text-gray-100">
+                                                    {percentage === 100 ? 'Perfect Day! 🎉' : percentage >= 50 ? 'Great Progress! 🚀' : 'Keep Going! 💪'}
+                                                </h4>
+                                                <p className="text-sm text-gray-600 dark:text-gray-300">
+                                                    You completed <span className="font-semibold text-indigo-600 dark:text-indigo-400">{completedCount}</span> out of <span className="font-semibold text-gray-900 dark:text-white">{totalRoutines}</span> habits.
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {/* Routine List */}
+                                        <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                                            {routines.map(routine => {
+                                                const isCompleted = routine.history && routine.history.includes(dateStr);
+                                                return (
+                                                    <div
+                                                        key={routine.id}
+                                                        className={`
+                                                            flex items-center justify-between p-3 rounded-xl border transition-colors
+                                                            ${isCompleted
+                                                                ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30'
+                                                                : 'bg-gray-50 dark:bg-gray-700/30 border-gray-100 dark:border-gray-700'
+                                                            }
+                                                        `}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="text-xl">{routine.icon}</div>
+                                                            <div>
+                                                                <p className={`font-medium ${isCompleted ? 'text-gray-900 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                                    {routine.title}
+                                                                </p>
+                                                                <p className="text-xs text-gray-400 dark:text-gray-500">
+                                                                    {routine.time}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            {isCompleted ? (
+                                                                <CheckCircle2 className="text-green-500 dark:text-green-400" size={24} />
+                                                            ) : (
+                                                                <Circle className="text-gray-300 dark:text-gray-600" size={24} />
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

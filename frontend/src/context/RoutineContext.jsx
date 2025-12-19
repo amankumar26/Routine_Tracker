@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, subDays, parseISO, isBefore } from 'date-fns';
 
 const RoutineContext = createContext();
 
@@ -30,10 +30,225 @@ export const RoutineProvider = ({ children }) => {
         ];
     });
 
+    // Punishment State
+    const [punishments, setPunishments] = useState(() => {
+        const saved = localStorage.getItem('punishments');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('punishments', JSON.stringify(punishments));
+    }, [punishments]);
+
+    const punishmentTasks = [
+        "Do 20 Pushups",
+        "No Social Media for 2 Hours",
+        "Read 10 Pages of a Boring Book",
+        "Walk for 15 Minutes without Music",
+        "Clean your Room",
+        "Meditate for 10 Minutes",
+        "Write 'I will not miss my habits' 50 times",
+        "Drink 1 Liter of Water immediately",
+        "Do a 1-minute Plank",
+        "Don't eat sugar today",
+        "Cold Shower",
+        "Donate $1 to a jar",
+        "Call a relative you haven't spoken to in a while",
+        "No Netflix/YouTube today"
+    ];
+
+    // Punishment History Stored Locally
+    const [punishmentHistory, setPunishmentHistory] = useState(() => {
+        const saved = localStorage.getItem('punishmentHistory');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('punishmentHistory', JSON.stringify(punishmentHistory));
+    }, [punishmentHistory]);
+
+    const completePunishment = (id, proofImage = null) => {
+        // Find the punishment to archive
+        const punishment = punishments.find(p => p.id === id);
+
+        // Remove from active list
+        setPunishments(prev => prev.filter(p => p.id !== id));
+
+        // Archive with proof
+        if (punishment) {
+            setPunishmentHistory(prev => [{
+                ...punishment,
+                completedAt: new Date().toISOString(),
+                proof: proofImage // Base64 string
+            }, ...prev]);
+        }
+
+        // Award Happy Points
+        setGlobalStats(prev => ({
+            ...prev,
+            happyPoints: (prev.happyPoints || 0) + 10
+        }));
+
+        if (notificationsEnabled) {
+            new Notification('Redemption! 🌟', {
+                body: `You earned 10 Happy Points for completing a punishment!`,
+                icon: '/vite.svg'
+            });
+        }
+    };
+
+    const getPunishmentForRoutine = (routineTitle, severity = 1) => {
+        const title = routineTitle.toLowerCase();
+        let selectedTask = "";
+
+        // Helper to select task
+        const select = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+        // Fitness/Physical Related
+        if (title.includes('run') || title.includes('jog') || title.includes('gym') || title.includes('workout') || title.includes('exercise') || title.includes('walk') || title.includes('sport')) {
+            const tasks = [
+                "Do 20 Jumping Jacks",
+                "Do 10 Burpees",
+                "Hold a Plank for 1 minute",
+                "Run/Walk 1 mile extra today",
+                "Do 15 Pushups",
+                "Wall sit for 1 minute",
+                "Climb 3 flights of stairs",
+                "Do 20 Squats"
+            ];
+            selectedTask = select(tasks);
+        }
+
+        // Intellectual/Productivity
+        else if (title.includes('read') || title.includes('study') || title.includes('code') || title.includes('write') || title.includes('learn') || title.includes('work')) {
+            const tasks = [
+                "Read a dictionary page",
+                "Write 'I will not procrastinate' 20 times",
+                "No Social Media for 1 Hour",
+                "Watch a 15 min educational video (no entertainment)",
+                "Organize your workspace for 10 mins",
+                "Write a 50-word essay on why you missed this task"
+            ];
+            selectedTask = select(tasks);
+        }
+
+        // Health/Wellness
+        else if (title.includes('water') || title.includes('sleep') || title.includes('eat') || title.includes('diet') || title.includes('floss')) {
+            const tasks = [
+                "Drink 0.5L of water in one go",
+                "No sugar for 12 hours",
+                "Eat a raw vegetable (carrot/cucumber) without dip",
+                "Cold Shower",
+                "Don't eat out/order food today",
+                "Go to bed 15 mins earlier tonight"
+            ];
+            selectedTask = select(tasks);
+        }
+
+        // Spiritual/Mindfulness
+        else if (title.includes('meditate') || title.includes('pray') || title.includes('journal') || title.includes('gratitude') || title.includes('reflection')) {
+            const tasks = [
+                "Meditate for 10 Minutes (Silence)",
+                "Write down 5 things you are grateful for",
+                "Read a spiritual or philosophical text for 10 mins",
+                "Sit in silence without devices for 15 mins",
+                "Perform a random act of kindness",
+                "Call someone and tell them you appreciate them"
+            ];
+            selectedTask = select(tasks);
+        }
+        else {
+            // Default: Mixed Bag
+            const mixedTasks = [
+                "Send a genuine compliment message to 3 friends",
+                "Pick up litter in your neighborhood for 5 mins",
+                "Donate $1 to a local charity or jar",
+                "Write a thank you note to someone who helped you",
+                "Reflect on a recent mistake and how to fix it",
+                "Listen to a 10-min guided meditation",
+                "Spend 10 mins in nature without your phone",
+                "Deep breathing exercises for 5 mins",
+                "Clean your bathroom",
+                "No music/podcasts for 2 hours",
+                "Unsubscribe from 3 newsletter emails",
+                "Delete 1 unused app from your phone",
+                "Do the dishes immediately after eating",
+                "Make your bed perfectly"
+            ];
+            selectedTask = select(mixedTasks);
+        }
+
+        // --- APPLY SEVERITY SCALING ---
+        // If severity > 1, multiply numbers in the string
+        if (severity > 1) {
+            // RegEx to look for numbers and multiply them
+            selectedTask = selectedTask.replace(/(\d+(\.\d+)?)/g, (match) => {
+                const num = parseFloat(match);
+                // Scale factor: 1.5x for Level 2, 2x for Level 3, etc.
+                const scaled = Math.ceil(num * (1 + (severity - 1) * 0.5));
+                return scaled;
+            });
+
+            // Append a warning based on severity
+            if (severity === 2) selectedTask += " (Double intensity! ⚠️)";
+            if (severity >= 3) selectedTask += " (MAX PUNISHMENT! 💀)";
+        }
+
+        return selectedTask;
+    };
+
     // Check if it's a new day to reset 'completedToday'
     useEffect(() => {
         const lastOpenDate = localStorage.getItem('lastOpenDate');
         const today = format(new Date(), 'yyyy-MM-dd');
+
+        if (lastOpenDate && lastOpenDate !== today) {
+            // Generate punishments for missed routines from the LAST SESSION
+            const missedRoutines = routines.filter(r => !r.deleted && !r.completedToday);
+
+            if (missedRoutines.length > 0) {
+                const newPunishments = missedRoutines.map(r => {
+                    // CALCULATE SEVERITY (Consecutive Miss Days)
+                    let severity = 1;
+                    const referenceDate = new Date(lastOpenDate);
+
+                    // Check up to 5 days back from the missed date
+                    for (let i = 1; i <= 5; i++) {
+                        const checkDate = subDays(referenceDate, i);
+                        const checkDateStr = format(checkDate, 'yyyy-MM-dd');
+
+                        // If date is before routine start, stop checking
+                        if (isBefore(checkDate, parseISO(r.startDate))) break;
+
+                        // If NOT in history, it was missed
+                        if (!r.history.includes(checkDateStr)) {
+                            severity++;
+                        } else {
+                            // Found a completed day, streak of misses ends
+                            break;
+                        }
+                    }
+
+                    return {
+                        id: Date.now() + Math.random(),
+                        task: getPunishmentForRoutine(r.title, severity),
+                        sourceRoutine: r.title,
+                        date: lastOpenDate,
+                        severity: severity // Store for potential UI display
+                    };
+                });
+
+                setPunishments(prev => [...prev, ...newPunishments]);
+
+                // Notify user
+                if (notificationsEnabled) {
+                    new Notification('Punishment Time! 😈', {
+                        body: `You missed ${missedRoutines.length} habits. Check the dashboard for your penalties!`,
+                        icon: '/vite.svg'
+                    });
+                }
+            }
+        }
 
         if (lastOpenDate !== today) {
             setRoutines(prev => prev.map(r => ({
@@ -245,7 +460,8 @@ export const RoutineProvider = ({ children }) => {
             currentStreak: 0,
             bestStreak: 0,
             lastAllCompletedDate: null,
-            badges: []
+            badges: [],
+            happyPoints: 0
         };
     });
 
@@ -280,7 +496,22 @@ export const RoutineProvider = ({ children }) => {
         "The journey of a thousand miles begins with one step.",
         "What you do makes a difference, and you have to decide what kind of difference you want to make.",
         "The difference between who you are and who you want to be is what you do.",
-        "Every morning we are born again. What we do today is what matters most."
+        "Every morning we are born again. What we do today is what matters most.",
+        "Aaj ka kaam kal par mat todo.",
+        "Koshish karne walon ki kabhi haar nahi hoti.",
+        "Sapne wo nahi jo sote waqt aaye, sapne wo hai jo sone na de.",
+        "Mehnat itni khamoshi se karo ki safalta shor macha de.",
+        "Waqt sabka badalta hai, bas thoda waqt lagta hai.",
+        "Jo hota hai, acche ke liye hota hai.",
+        "Himmat mat haarna, abhi bahut aage jaana hai.",
+        "Chote kadam bhi badi manzil tak le jaate hain.",
+        "Kal kare so aaj kar, aaj kare so ab.",
+        "Rukna nahi hai, bas chalte rehna hai.",
+        "Agar fail ho gaye to kya hua? Failure ek beginning hai, end nahi.",
+        "Jitni badi struggle hogi, jeet utni hi shandaar hogi.",
+        "Khud par vishwas rakho, duniya tumhari hogi.",
+        "Manzil unhi ko milti hai, jinke sapno mein jaan hoti hai.",
+        "Zindagi mein kabhi bhi haar mat maano, kya pata agli koshish hi kamyaabi ho."
     ];
 
     const [dailyQuote, setDailyQuote] = useState(() => {
@@ -455,7 +686,9 @@ export const RoutineProvider = ({ children }) => {
             globalStats,
             dailyQuote,
             darkMode,
-            toggleDarkMode
+            toggleDarkMode,
+            punishments,
+            completePunishment
         }}>
             {children}
         </RoutineContext.Provider>

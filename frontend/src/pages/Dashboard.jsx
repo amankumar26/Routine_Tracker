@@ -8,10 +8,11 @@ import AddRoutineModal from '../components/AddRoutineModal';
 
 const Dashboard = () => {
     // Dashboard component
-    const { routines, toggleRoutine, deleteRoutine, user, editRoutine, addRoutine, toggleSubtask, globalStats, dailyQuote } = useRoutine();
+    const { routines, toggleRoutine, deleteRoutine, user, editRoutine, addRoutine, toggleSubtask, globalStats, dailyQuote, punishments, completePunishment } = useRoutine();
     const today = format(new Date(), 'EEEE, MMMM do');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [routineToEdit, setRoutineToEdit] = React.useState(null);
+    const [punishmentCardExpanded, setPunishmentCardExpanded] = React.useState(true);
 
     // Filter out deleted routines and sort: Incomplete first, then Completed
     const activeRoutines = routines
@@ -52,6 +53,53 @@ const Dashboard = () => {
 
     const greeting = getGreeting();
 
+    // Punishment Capture Logic
+    const fileInputRef = React.useRef(null);
+    const [uploadingId, setUploadingId] = React.useState(null);
+
+    const handleImageCapture = (e) => {
+        const file = e.target.files[0];
+        if (file && uploadingId) {
+            // Compress/Resize image to avoid localStorage limits
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+
+                    // Resize to max 300px width/height
+                    const MAX_SIZE = 300;
+                    let width = img.width;
+                    let height = img.height;
+
+                    if (width > height) {
+                        if (width > MAX_SIZE) {
+                            height *= MAX_SIZE / width;
+                            width = MAX_SIZE;
+                        }
+                    } else {
+                        if (height > MAX_SIZE) {
+                            width *= MAX_SIZE / height;
+                            height = MAX_SIZE;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress quality
+                    completePunishment(uploadingId, dataUrl);
+                    setUploadingId(null);
+                    if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     return (
         <div>
             <header className="mb-6">
@@ -65,7 +113,15 @@ const Dashboard = () => {
                         ☀️
                     </motion.span>
                 </h1>
-                <p className="text-gray-500 dark:text-gray-400 mt-2">{today}</p>
+                <div className="flex items-center gap-4 mt-2">
+                    <p className="text-gray-500 dark:text-gray-400">{today}</p>
+                    {globalStats?.happyPoints > 0 && (
+                        <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 text-xs font-bold px-2 py-1 rounded-full border border-yellow-200 dark:border-yellow-700">
+                            <span>🌟</span>
+                            <span>{globalStats.happyPoints} Happy Points</span>
+                        </div>
+                    )}
+                </div>
             </header>
 
             {/* Streak & Motivation Section */}
@@ -219,6 +275,105 @@ const Dashboard = () => {
                 <div className="absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 -mb-10 -ml-10 w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
             </div>
+
+            {/* Floating Punishment Card */}
+            <AnimatePresence>
+                {punishments.length > 0 && (
+                    <>
+                        <motion.div
+                            initial={{ y: 100, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 100, opacity: 0 }}
+                            className="fixed bottom-6 right-6 z-50 w-full max-w-sm px-4 md:px-0 pointer-events-none"
+                        >
+                            <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-red-100 dark:border-red-900/50 overflow-hidden pointer-events-auto ring-4 ring-red-50 dark:ring-red-900/20">
+                                {/* Header */}
+                                <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/30 dark:to-orange-900/30 p-4 flex items-center justify-between cursor-pointer"
+                                    onClick={() => setPunishmentCardExpanded(!punishmentCardExpanded)}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xl animate-wiggle">😈</span>
+                                        <h3 className="font-bold text-red-700 dark:text-red-400">Punishment Zone</h3>
+                                        <span className="bg-red-200 dark:bg-red-800 text-red-800 dark:text-red-200 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                            {punishments.length}
+                                        </span>
+                                    </div>
+                                    <button className="text-red-400 hover:text-red-600 dark:text-red-500 dark:hover:text-red-300 transition-colors">
+                                        {punishmentCardExpanded ? '▼' : '▲'}
+                                    </button>
+                                </div>
+
+                                {/* Hidden File Input for Capture */}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    capture="environment"
+                                    className="hidden"
+                                    ref={fileInputRef}
+                                    onChange={handleImageCapture}
+                                />
+
+                                {/* Content */}
+                                <AnimatePresence>
+                                    {punishmentCardExpanded && (
+                                        <motion.div
+                                            initial={{ height: 0 }}
+                                            animate={{ height: 'auto' }}
+                                            exit={{ height: 0 }}
+                                            className="overflow-hidden"
+                                        >
+                                            <div className="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 text-center">
+                                                    Missed habits? Pay the price to earn back 🌟 Happy Points!
+                                                </p>
+                                                <div className="space-y-3">
+                                                    {punishments.map(punishment => (
+                                                        <motion.div
+                                                            key={punishment.id}
+                                                            layout
+                                                            initial={{ opacity: 0, x: -20 }}
+                                                            animate={{ opacity: 1, x: 0 }}
+                                                            exit={{ opacity: 0, x: 20 }}
+                                                            className="bg-white dark:bg-gray-700/50 p-3 rounded-xl border border-gray-100 dark:border-gray-600 shadow-sm group"
+                                                        >
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <div className="flex-1">
+                                                                    <p className="font-bold text-gray-800 dark:text-gray-200 text-sm leading-tight">
+                                                                        {punishment.task}
+                                                                    </p>
+                                                                    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                                        <span className="opacity-75">Missed: </span>
+                                                                        <span className="font-semibold text-red-500 dark:text-red-400">
+                                                                            {punishment.sourceRoutine}
+                                                                        </span>
+                                                                        <span className="opacity-50 ml-1">
+                                                                            ({punishment.date})
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setUploadingId(punishment.id);
+                                                                        if (fileInputRef.current) fileInputRef.current.click();
+                                                                    }}
+                                                                    className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-xs font-bold rounded-lg shadow-md shadow-red-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-1"
+                                                                >
+                                                                    <span>📸</span> Done
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
 
             {/* Routines List */}
             <div>

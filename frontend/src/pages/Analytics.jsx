@@ -398,7 +398,7 @@ const Analytics = () => {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2 transition-colors duration-300">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Habit Performance</h3>
                     <div className="space-y-6">
-                        {routines.map(routine => {
+                        {routines.filter(routine => !routine.deleted).map(routine => {
                             // Calculate Consistency (Last 30 Days)
                             const history = routine.history || [];
                             const today = new Date();

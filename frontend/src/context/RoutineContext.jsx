@@ -687,7 +687,6 @@ export const RoutineProvider = ({ children }) => {
             reminders,
             addReminder,
             deleteReminder
-
         }}>
             {children}
         </RoutineContext.Provider>

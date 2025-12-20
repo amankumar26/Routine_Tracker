@@ -1,12 +1,12 @@
 import React from 'react';
 import { useRoutine } from '../context/RoutineContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, Cell } from 'recharts';
-import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth } from 'date-fns';
+import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth, isBefore, isAfter } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Circle, Trophy } from 'lucide-react';
 
 const Analytics = () => {
-    const { routines } = useRoutine();
+    const { routines, reminders, deleteReminder } = useRoutine();
     const [selectedDate, setSelectedDate] = React.useState(null);
     const [showInfo, setShowInfo] = React.useState(false);
 
@@ -361,24 +361,50 @@ const Analytics = () => {
                                     const isCurrentMonth = isSameMonth(date, monthStart);
                                     const isTodayDate = isSameDay(date, today);
 
+                                    const dateStr = format(date, 'yyyy-MM-dd');
+                                    // Safety check: ensure reminders is an array
+                                    const safeReminders = Array.isArray(reminders) ? reminders : [];
+                                    const hasReminders = safeReminders.some(r => r.date === dateStr);
+
+                                    const isPastDate = isBefore(date, new Date()) || isSameDay(date, new Date());
+
+                                    // Calculate earliest start date from active routines
+                                    const earliestStartDate = routines.length > 0
+                                        ? routines.reduce((earliest, r) => {
+                                            const rDate = r.startDate ? new Date(r.startDate) : new Date(); // Use routine start date or fallback
+                                            return isBefore(rDate, earliest) ? rDate : earliest;
+                                        }, new Date())
+                                        : new Date(); // Default to today if no routines
+
+                                    earliestStartDate.setHours(0, 0, 0, 0);
+
+                                    const isAfterStart = isAfter(date, earliestStartDate) || isSameDay(date, earliestStartDate);
+
                                     return (
                                         <div
                                             key={i}
                                             className={`
                                                 aspect-square rounded-xl flex items-center justify-center text-xs font-medium transition-all duration-300 relative
                                                 ${!isCurrentMonth ? 'opacity-30' : ''}
-                                                ${isActive
-                                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-105'
-                                                    : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                                                ${hasReminders
+                                                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/40 scale-105 z-10'
+                                                    : isActive
+                                                        ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-105'
+                                                        : (isPastDate && isCurrentMonth && isAfterStart)
+                                                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200'
+                                                            : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
                                                 }
-                                                ${isTodayDate && !isActive ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-800' : ''}
+                                                ${isTodayDate && !isActive && !hasReminders ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-800' : ''}
                                                 cursor-pointer hover:scale-110
                                             `}
                                             onClick={() => setSelectedDate(date)}
                                         >
                                             {format(date, 'd')}
-                                            {isActive && (
+                                            {isActive && !hasReminders && (
                                                 <div className="absolute inset-0 bg-indigo-500 rounded-xl blur-md opacity-40 -z-10"></div>
+                                            )}
+                                            {hasReminders && (
+                                                <div className="absolute inset-0 bg-orange-500 rounded-xl blur-md opacity-40 -z-10"></div>
                                             )}
                                         </div>
                                     );
@@ -570,6 +596,33 @@ const Analytics = () => {
                                                     </div>
                                                 );
                                             })}
+
+                                            {/* Reminders Section in Modal */}
+                                            {reminders && reminders.filter(r => r.date === dateStr).length > 0 && (
+                                                <div className="pt-4 border-t border-gray-100 dark:border-gray-700 mt-4">
+                                                    <h4 className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">Reminders</h4>
+                                                    <div className="space-y-2">
+                                                        {reminders.filter(r => r.date === dateStr).map(r => (
+                                                            <div key={r.id} className="flex items-center justify-between bg-orange-50 dark:bg-orange-900/20 p-3 rounded-xl border border-orange-100 dark:border-orange-900/30">
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="text-lg">📌</span>
+                                                                    <span className="text-gray-800 dark:text-gray-200 font-medium">{r.text}</span>
+                                                                </div>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (window.confirm('Delete this reminder?')) {
+                                                                            deleteReminder(r.id);
+                                                                        }
+                                                                    }}
+                                                                    className="p-1.5 text-orange-400 hover:text-red-500 hover:bg-orange-100 dark:hover:bg-orange-900/40 rounded-lg transition-colors"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </>
                                 );

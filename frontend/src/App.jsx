@@ -11,7 +11,12 @@ import { RoutineProvider, useRoutine } from './context/RoutineContext';
 // Wrapper to handle modal state which needs access to context
 const AppContent = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { addRoutine } = useRoutine();
+  const { addRoutine, addReminder } = useRoutine();
+
+  const handleAddReminder = (reminder) => {
+    addReminder(reminder);
+    setIsModalOpen(false);
+  };
 
   return (
     <Router>
@@ -26,6 +31,7 @@ const AppContent = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         onAdd={addRoutine}
+        onAddReminder={handleAddReminder}
       />
     </Router>
   );

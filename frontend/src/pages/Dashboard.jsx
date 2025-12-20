@@ -47,6 +47,11 @@ const Dashboard = () => {
         setIsModalOpen(true);
     };
 
+    const handleAddReminderFromModal = (reminderObj) => {
+        addReminder(reminderObj);
+        setIsModalOpen(false);
+    };
+
     const handleDayClick = (date) => {
         setSelectedDate(date);
         setIsReminderModalOpen(true);
@@ -377,6 +382,7 @@ const Dashboard = () => {
                 onClose={() => setIsModalOpen(false)}
                 onAdd={handleAddRoutine}
                 onEdit={handleEditRoutine}
+                onAddReminder={handleAddReminderFromModal}
                 routineToEdit={routineToEdit}
             />
 

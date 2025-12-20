@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { User, Bell, Shield, Moon, Edit2, Check, X } from 'lucide-react';
 import { useRoutine } from '../context/RoutineContext';
+import { motion } from 'framer-motion';
 
 const Settings = () => {
     const { user, updateUserName, notificationsEnabled, toggleNotifications, darkMode, toggleDarkMode } = useRoutine();
@@ -15,7 +16,16 @@ const Settings = () => {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">Settings ⚙️</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-3">
+                    Settings
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
+                        className="inline-block"
+                    >
+                        ⚙️
+                    </motion.div>
+                </h1>
                 <p className="text-gray-500 dark:text-gray-400 mt-2">Manage your preferences and account.</p>
             </header>
 
@@ -23,9 +33,12 @@ const Settings = () => {
 
                 {/* Profile Section */}
                 <div className="p-4 sm:p-6 border-b border-gray-100 dark:border-gray-700 flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-2xl font-bold shrink-0">
-                        {user.name.charAt(0)}
-                    </div>
+                    <motion.div
+                        whileHover={{ scale: 1.1, rotate: [0, -10, 10, 0] }}
+                        className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 text-2xl font-bold shrink-0 shadow-inner cursor-pointer"
+                    >
+                        <User size={32} strokeWidth={2.5} />
+                    </motion.div>
                     <div className="flex-1 min-w-0">
                         {isEditing ? (
                             <input
@@ -42,16 +55,24 @@ const Settings = () => {
                     </div>
                     {isEditing ? (
                         <div className="flex space-x-2">
-                            <button onClick={handleSave} className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40">
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={handleSave}
+                                className="p-2 text-green-600 bg-green-50 dark:bg-green-900/20 dark:text-green-400 rounded-lg hover:bg-green-100 dark:hover:bg-green-900/40"
+                            >
                                 <Check size={20} />
-                            </button>
-                            <button onClick={() => { setIsEditing(false); setNewName(user.name); }} className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40">
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => { setIsEditing(false); setNewName(user.name); }}
+                                className="p-2 text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40"
+                            >
                                 <X size={20} />
-                            </button>
+                            </motion.button>
                         </div>
                     ) : (
-                        <button onClick={() => setIsEditing(true)} className="ml-auto px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors whitespace-nowrap">
-                            Edit Profile
+                        <button onClick={() => setIsEditing(true)} className="ml-auto px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/40 transition-colors whitespace-nowrap flex items-center gap-2">
+                            <Edit2 size={16} /> Edit Profile
                         </button>
                     )}
                 </div>
@@ -60,9 +81,13 @@ const Settings = () => {
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                     <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer flex items-center justify-between group">
                         <div className="flex items-center space-x-4">
-                            <div className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors">
+                            <motion.div
+                                whileHover={{ rotate: [0, 20, -20, 20, 0] }}
+                                transition={{ duration: 0.5 }}
+                                className="p-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/40 transition-colors"
+                            >
                                 <Bell size={20} />
-                            </div>
+                            </motion.div>
                             <div>
                                 <h4 className="font-medium text-gray-900 dark:text-gray-100">Notifications</h4>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Manage your daily reminders</p>
@@ -87,9 +112,13 @@ const Settings = () => {
 
                     <div className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer flex items-center justify-between group">
                         <div className="flex items-center space-x-4">
-                            <div className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors">
+                            <motion.div
+                                whileHover={{ rotate: 180 }}
+                                transition={{ duration: 0.5 }}
+                                className="p-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 rounded-lg group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40 transition-colors"
+                            >
                                 <Moon size={20} />
-                            </div>
+                            </motion.div>
                             <div>
                                 <h4 className="font-medium text-gray-900 dark:text-gray-100">Dark Mode</h4>
                                 <p className="text-sm text-gray-500 dark:text-gray-400">Switch between light and dark themes</p>

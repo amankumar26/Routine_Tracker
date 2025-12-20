@@ -50,7 +50,12 @@ const RoutineCard = ({ routine, onToggle, onEdit, onToggleSubtask }) => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-gray-500 dark:text-gray-400">
                             {/* Time */}
                             <span className="flex items-center bg-gray-50 dark:bg-gray-700/50 px-2 py-1 rounded-md">
-                                <Clock size={12} className="mr-1.5" />
+                                <motion.div
+                                    animate={{ rotate: [0, 15, 0] }}
+                                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 5 }}
+                                >
+                                    <Clock size={12} className="mr-1.5" />
+                                </motion.div>
                                 {routine.time}
                             </span>
 
@@ -58,7 +63,12 @@ const RoutineCard = ({ routine, onToggle, onEdit, onToggleSubtask }) => {
                             <span className={clsx("flex items-center px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/10",
                                 routine.streak > 0 ? "text-orange-600 dark:text-orange-400 font-medium" : "text-gray-400 dark:text-gray-500"
                             )}>
-                                <Flame size={12} className="mr-1.5" />
+                                <motion.div
+                                    animate={routine.streak > 0 ? { scale: [1, 1.2, 1] } : {}}
+                                    transition={{ duration: 1.5, repeat: Infinity }}
+                                >
+                                    <Flame size={12} className="mr-1.5" />
+                                </motion.div>
                                 {routine.streak} streak
                             </span>
 

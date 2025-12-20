@@ -5,14 +5,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, subDays, startOfWeek, subWeeks, eachDayOfInterval, startOfMonth, endOfMonth, endOfWeek, isSameMonth, isSameDay } from 'date-fns';
 
 import AddRoutineModal from '../components/AddRoutineModal';
+import ReminderModal from '../components/ReminderModal';
 
 const Dashboard = () => {
     // Dashboard component
-    const { routines, toggleRoutine, deleteRoutine, user, editRoutine, addRoutine, toggleSubtask, globalStats, dailyQuote, punishments, completePunishment } = useRoutine();
+    const { routines, toggleRoutine, deleteRoutine, user, editRoutine, addRoutine, toggleSubtask, globalStats, dailyQuote, punishments, completePunishment, reminders, addReminder, deleteReminder } = useRoutine();
     const today = format(new Date(), 'EEEE, MMMM do');
     const [isModalOpen, setIsModalOpen] = React.useState(false);
     const [routineToEdit, setRoutineToEdit] = React.useState(null);
     const [punishmentCardExpanded, setPunishmentCardExpanded] = React.useState(true);
+    const [isReminderModalOpen, setIsReminderModalOpen] = React.useState(false);
+    const [selectedDate, setSelectedDate] = React.useState(null);
 
     // Filter out deleted routines and sort: Incomplete first, then Completed
     const activeRoutines = routines
@@ -42,6 +45,24 @@ const Dashboard = () => {
     const openEditModal = (routine) => {
         setRoutineToEdit(routine);
         setIsModalOpen(true);
+    };
+
+    const handleDayClick = (date) => {
+        setSelectedDate(date);
+        setIsReminderModalOpen(true);
+    };
+
+    const handleAddReminder = (text) => {
+        if (selectedDate) {
+            addReminder({
+                date: format(selectedDate, 'yyyy-MM-dd'),
+                text
+            });
+        }
+    };
+
+    const handleDeleteReminder = (id) => {
+        deleteReminder(id);
     };
 
     const getGreeting = () => {
@@ -182,15 +203,20 @@ const Dashboard = () => {
                                     const isCurrentMonth = isSameMonth(date, monthStart);
                                     const isTodayDate = isSameDay(date, today);
 
+                                    const dateStr = format(date, 'yyyy-MM-dd');
+                                    const dayReminders = reminders.filter(r => r.date === dateStr);
+                                    const hasReminders = dayReminders.length > 0;
+
                                     return (
                                         <div
                                             key={i}
+                                            onClick={() => handleDayClick(date)}
                                             className={`
-                                                aspect-square rounded-xl flex items-center justify-center text-xs font-medium transition-all duration-300 relative
+                                                aspect-square rounded-xl flex items-center justify-center text-xs font-medium transition-all duration-300 relative cursor-pointer
                                                 ${!isCurrentMonth ? 'opacity-30' : ''}
                                                 ${isActive
                                                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-105'
-                                                    : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                                                    : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
                                                 }
                                                 ${isTodayDate && !isActive ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-800' : ''}
                                             `}
@@ -198,6 +224,9 @@ const Dashboard = () => {
                                             {format(date, 'd')}
                                             {isActive && (
                                                 <div className="absolute inset-0 bg-indigo-500 rounded-xl blur-md opacity-40 -z-10"></div>
+                                            )}
+                                            {hasReminders && (
+                                                <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isActive ? 'bg-white' : 'bg-indigo-500'}`}></div>
                                             )}
                                         </div>
                                     );
@@ -349,6 +378,15 @@ const Dashboard = () => {
                 onAdd={handleAddRoutine}
                 onEdit={handleEditRoutine}
                 routineToEdit={routineToEdit}
+            />
+
+            <ReminderModal
+                isOpen={isReminderModalOpen}
+                onClose={() => setIsReminderModalOpen(false)}
+                selectedDate={selectedDate}
+                reminders={selectedDate ? reminders.filter(r => r.date === format(selectedDate, 'yyyy-MM-dd')) : []}
+                onAdd={handleAddReminder}
+                onDelete={handleDeleteReminder}
             />
         </div>
     );

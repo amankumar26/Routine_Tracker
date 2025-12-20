@@ -40,6 +40,24 @@ export const RoutineProvider = ({ children }) => {
         localStorage.setItem('punishments', JSON.stringify(punishments));
     }, [punishments]);
 
+    // Reminders State
+    const [reminders, setReminders] = useState(() => {
+        const saved = localStorage.getItem('reminders');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('reminders', JSON.stringify(reminders));
+    }, [reminders]);
+
+    const addReminder = (reminder) => {
+        setReminders(prev => [...prev, { ...reminder, id: Date.now() }]);
+    };
+
+    const deleteReminder = (id) => {
+        setReminders(prev => prev.filter(r => r.id !== id));
+    };
+
     const punishmentTasks = [
         "Do 20 Pushups",
         "No Social Media for 2 Hours",
@@ -665,7 +683,11 @@ export const RoutineProvider = ({ children }) => {
             darkMode,
             toggleDarkMode,
             punishments,
-            completePunishment
+            completePunishment,
+            reminders,
+            addReminder,
+            deleteReminder
+
         }}>
             {children}
         </RoutineContext.Provider>

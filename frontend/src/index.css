@@ -22,6 +22,8 @@ body {
   min-height: 100vh;
   background-color: #f8fafc;
   transition: background-color 0.3s ease;
+  touch-action: manipulation;
+  -webkit-font-smoothing: antialiased;
 }
 
 .dark body {

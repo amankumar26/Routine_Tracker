@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { format, subDays, parseISO, isBefore } from 'date-fns';
+import { getPunishmentForRoutine, fetchDares } from '../utils/punishments';
 
 const RoutineContext = createContext();
 
@@ -58,138 +59,45 @@ export const RoutineProvider = ({ children }) => {
         setReminders(prev => prev.filter(r => r.id !== id));
     };
 
-    const punishmentTasks = [
-        "Do 20 Pushups",
-        "No Social Media for 2 Hours",
-        "Read 10 Pages of a Boring Book",
-        "Walk for 15 Minutes without Music",
-        "Clean your Room",
-        "Meditate for 10 Minutes",
-        "Write 'I will not miss my habits' 50 times",
-        "Drink 1 Liter of Water immediately",
-        "Do a 1-minute Plank",
-        "Don't eat sugar today",
-        "Cold Shower",
-        "Donate $1 to a jar",
-        "Call a relative you haven't spoken to in a while",
-        "No Netflix/YouTube today"
-    ];
+    // Initial fetch for dares
+    useEffect(() => {
+        fetchDares(5);
+    }, []);
+
+    // Floating Points Animation State
+    const [pointPopups, setPointPopups] = useState([]);
+
+    const triggerPointPopup = (amount) => {
+        const id = Date.now();
+        setPointPopups(prev => [...prev, { id, amount }]);
+
+        // Auto remove after animation (2s)
+        setTimeout(() => {
+            setPointPopups(prev => prev.filter(p => p.id !== id));
+        }, 2000);
+    };
 
     const completePunishment = (id) => {
         setPunishments(prev => prev.filter(p => p.id !== id));
 
+        // Random Happy Points (1-5)
+        const earnedPoints = Math.floor(Math.random() * 5) + 1;
+
+        // Trigger Flowing Animation
+        triggerPointPopup(earnedPoints);
+
         // Award Happy Points
         setGlobalStats(prev => ({
             ...prev,
-            happyPoints: (prev.happyPoints || 0) + 10
+            happyPoints: (prev.happyPoints || 0) + earnedPoints
         }));
 
         if (notificationsEnabled) {
             new Notification('Redemption! 🌟', {
-                body: `You earned 10 Happy Points for completing a punishment!`,
+                body: `You earned ${earnedPoints} Happy Points for completing a punishment!`,
                 icon: '/vite.svg'
             });
         }
-    };
-
-    const getPunishmentForRoutine = (routineTitle, severity = 1) => {
-        const title = routineTitle.toLowerCase();
-        let selectedTask = "";
-
-        // Helper to select task
-        const select = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-        // Fitness/Physical Related
-        if (title.includes('run') || title.includes('jog') || title.includes('gym') || title.includes('workout') || title.includes('exercise') || title.includes('walk') || title.includes('sport')) {
-            const tasks = [
-                "Do 20 Jumping Jacks",
-                "Do 10 Burpees",
-                "Hold a Plank for 1 minute",
-                "Run/Walk 1 mile extra today",
-                "Do 15 Pushups",
-                "Wall sit for 1 minute",
-                "Climb 3 flights of stairs",
-                "Do 20 Squats"
-            ];
-            selectedTask = select(tasks);
-        }
-
-        // Intellectual/Productivity
-        else if (title.includes('read') || title.includes('study') || title.includes('code') || title.includes('write') || title.includes('learn') || title.includes('work')) {
-            const tasks = [
-                "Read a dictionary page",
-                "Write 'I will not procrastinate' 20 times",
-                "No Social Media for 1 Hour",
-                "Watch a 15 min educational video (no entertainment)",
-                "Organize your workspace for 10 mins",
-                "Write a 50-word essay on why you missed this task"
-            ];
-            selectedTask = select(tasks);
-        }
-
-        // Health/Wellness
-        else if (title.includes('water') || title.includes('sleep') || title.includes('eat') || title.includes('diet') || title.includes('floss')) {
-            const tasks = [
-                "Drink 0.5L of water in one go",
-                "No sugar for 12 hours",
-                "Eat a raw vegetable (carrot/cucumber) without dip",
-                "Cold Shower",
-                "Don't eat out/order food today",
-                "Go to bed 15 mins earlier tonight"
-            ];
-            selectedTask = select(tasks);
-        }
-
-        // Spiritual/Mindfulness
-        else if (title.includes('meditate') || title.includes('pray') || title.includes('journal') || title.includes('gratitude') || title.includes('reflection')) {
-            const tasks = [
-                "Meditate for 10 Minutes (Silence)",
-                "Write down 5 things you are grateful for",
-                "Read a spiritual or philosophical text for 10 mins",
-                "Sit in silence without devices for 15 mins",
-                "Perform a random act of kindness",
-                "Call someone and tell them you appreciate them"
-            ];
-            selectedTask = select(tasks);
-        }
-        else {
-            // Default: Mixed Bag
-            const mixedTasks = [
-                "Send a genuine compliment message to 3 friends",
-                "Pick up litter in your neighborhood for 5 mins",
-                "Donate $1 to a local charity or jar",
-                "Write a thank you note to someone who helped you",
-                "Reflect on a recent mistake and how to fix it",
-                "Listen to a 10-min guided meditation",
-                "Spend 10 mins in nature without your phone",
-                "Deep breathing exercises for 5 mins",
-                "Clean your bathroom",
-                "No music/podcasts for 2 hours",
-                "Unsubscribe from 3 newsletter emails",
-                "Delete 1 unused app from your phone",
-                "Do the dishes immediately after eating",
-                "Make your bed perfectly"
-            ];
-            selectedTask = select(mixedTasks);
-        }
-
-        // --- APPLY SEVERITY SCALING ---
-        // If severity > 1, multiply numbers in the string
-        if (severity > 1) {
-            // RegEx to look for numbers and multiply them
-            selectedTask = selectedTask.replace(/(\d+(\.\d+)?)/g, (match) => {
-                const num = parseFloat(match);
-                // Scale factor: 1.5x for Level 2, 2x for Level 3, etc.
-                const scaled = Math.ceil(num * (1 + (severity - 1) * 0.5));
-                return scaled;
-            });
-
-            // Append a warning based on severity
-            if (severity === 2) selectedTask += " (Double intensity! ⚠️)";
-            if (severity >= 3) selectedTask += " (MAX PUNISHMENT! 💀)";
-        }
-
-        return selectedTask;
     };
 
     // Check if it's a new day to reset 'completedToday'
@@ -686,7 +594,8 @@ export const RoutineProvider = ({ children }) => {
             completePunishment,
             reminders,
             addReminder,
-            deleteReminder
+            deleteReminder,
+            pointPopups
         }}>
             {children}
         </RoutineContext.Provider>

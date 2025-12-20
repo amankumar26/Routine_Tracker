@@ -6,6 +6,7 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 
 import AddRoutineModal from './components/AddRoutineModal';
+import FloatingPoints from './components/FloatingPoints';
 import { RoutineProvider, useRoutine } from './context/RoutineContext';
 
 // Wrapper to handle modal state which needs access to context
@@ -33,6 +34,7 @@ const AppContent = () => {
         onAdd={addRoutine}
         onAddReminder={handleAddReminder}
       />
+      <FloatingPoints />
     </Router>
   );
 };

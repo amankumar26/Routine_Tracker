@@ -19,4 +19,13 @@ export default defineConfig({
       }
     })
   ],
+  server: {
+    proxy: {
+      '/api/truthordare': {
+        target: 'https://api.truthordarebot.xyz',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/truthordare/, '/v1')
+      }
+    }
+  }
 })

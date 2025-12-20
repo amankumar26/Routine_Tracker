@@ -368,17 +368,7 @@ const Analytics = () => {
 
                                     const isPastDate = isBefore(date, new Date()) || isSameDay(date, new Date());
 
-                                    // Calculate earliest start date from active routines
-                                    const earliestStartDate = routines.length > 0
-                                        ? routines.reduce((earliest, r) => {
-                                            const rDate = r.startDate ? new Date(r.startDate) : new Date(); // Use routine start date or fallback
-                                            return isBefore(rDate, earliest) ? rDate : earliest;
-                                        }, new Date())
-                                        : new Date(); // Default to today if no routines
 
-                                    earliestStartDate.setHours(0, 0, 0, 0);
-
-                                    const isAfterStart = isAfter(date, earliestStartDate) || isSameDay(date, earliestStartDate);
 
                                     return (
                                         <div
@@ -390,9 +380,7 @@ const Analytics = () => {
                                                     ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/40 scale-105 z-10'
                                                     : isActive
                                                         ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/40 scale-105'
-                                                        : (isPastDate && isCurrentMonth && isAfterStart)
-                                                            ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-200'
-                                                            : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
+                                                        : 'bg-gray-50 dark:bg-gray-700/50 text-gray-500 dark:text-gray-400'
                                                 }
                                                 ${isTodayDate && !isActive && !hasReminders ? 'ring-2 ring-indigo-400 ring-offset-2 dark:ring-offset-gray-800' : ''}
                                                 cursor-pointer hover:scale-110
@@ -519,7 +507,16 @@ const Analytics = () => {
 
                                 // Filter routines that existed on this date (Strictly exclude deleted)
                                 const activeRoutinesForDay = routines.filter(r => {
-                                    const startDate = r.startDate || '2000-01-01';
+                                    let startDate = r.startDate;
+
+                                    // If no startDate, try to derive from ID (if it's a timestamp)
+                                    if (!startDate && typeof r.id === 'number' && r.id > 1000000000) {
+                                        startDate = format(new Date(r.id), 'yyyy-MM-dd');
+                                    }
+
+                                    // Fallback for mock data or legacy
+                                    if (!startDate) startDate = '2000-01-01';
+
                                     return !r.deleted && dateStr >= startDate;
                                 });
 

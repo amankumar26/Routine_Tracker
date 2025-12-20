@@ -22,11 +22,9 @@ const Analytics = () => {
 
         routines.forEach(routine => {
             const routineStartDate = routine.startDate || '2000-01-01';
-            const isDeleted = routine.deleted;
-            const deletedAt = routine.deletedAt;
 
-            // Active if date is >= start date AND (not deleted OR date <= deleted date)
-            if (dayStr >= routineStartDate && (!isDeleted || dayStr <= deletedAt)) {
+            // Strictly exclude deleted routines to allow "cleaning up" data
+            if (!routine.deleted && dayStr >= routineStartDate) {
                 total++;
                 if (routine.history && routine.history.includes(dayStr)) {
                     completed++;
@@ -85,13 +83,9 @@ const Analytics = () => {
                     routines.forEach(routine => {
                         // Check if routine existed on this day
                         const routineStartDate = routine.startDate || '2000-01-01';
-                        const isDeleted = routine.deleted;
-                        const deletedAt = routine.deletedAt;
 
-                        // It is a valid potential habit if:
-                        // 1. We are past/on its start date
-                        // 2. AND (it's not deleted OR it was deleted AFTER this day)
-                        const isActiveOnDate = dayStr >= routineStartDate && (!isDeleted || dayStr <= deletedAt);
+                        // Strictly exclude deleted routines
+                        const isActiveOnDate = !routine.deleted && dayStr >= routineStartDate;
 
                         if (isActiveOnDate) {
                             // Count potential for this day
@@ -398,7 +392,7 @@ const Analytics = () => {
                 <div className="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2 transition-colors duration-300">
                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 mb-6">Habit Performance</h3>
                     <div className="space-y-6">
-                        {routines.map(routine => {
+                        {routines.filter(r => !r.deleted).map(routine => {
                             // Calculate Consistency (Last 30 Days)
                             const history = routine.history || [];
                             const today = new Date();
@@ -497,14 +491,10 @@ const Analytics = () => {
                             {(() => {
                                 const dateStr = format(selectedDate, 'yyyy-MM-dd');
 
-                                // Filter routines that existed on this date (and weren't deleted before it)
+                                // Filter routines that existed on this date (Strictly exclude deleted)
                                 const activeRoutinesForDay = routines.filter(r => {
                                     const startDate = r.startDate || '2000-01-01';
-                                    const isDeleted = r.deleted;
-                                    const deletedAt = r.deletedAt;
-
-                                    // Active if date is >= start date AND (not deleted OR date <= deleted date)
-                                    return dateStr >= startDate && (!isDeleted || dateStr <= deletedAt);
+                                    return !r.deleted && dateStr >= startDate;
                                 });
 
                                 const activeTotal = activeRoutinesForDay.length;

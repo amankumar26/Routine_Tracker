@@ -57,31 +57,8 @@ export const RoutineProvider = ({ children }) => {
         "No Netflix/YouTube today"
     ];
 
-    // Punishment History Stored Locally
-    const [punishmentHistory, setPunishmentHistory] = useState(() => {
-        const saved = localStorage.getItem('punishmentHistory');
-        return saved ? JSON.parse(saved) : [];
-    });
-
-    useEffect(() => {
-        localStorage.setItem('punishmentHistory', JSON.stringify(punishmentHistory));
-    }, [punishmentHistory]);
-
-    const completePunishment = (id, proofImage = null) => {
-        // Find the punishment to archive
-        const punishment = punishments.find(p => p.id === id);
-
-        // Remove from active list
+    const completePunishment = (id) => {
         setPunishments(prev => prev.filter(p => p.id !== id));
-
-        // Archive with proof
-        if (punishment) {
-            setPunishmentHistory(prev => [{
-                ...punishment,
-                completedAt: new Date().toISOString(),
-                proof: proofImage // Base64 string
-            }, ...prev]);
-        }
 
         // Award Happy Points
         setGlobalStats(prev => ({

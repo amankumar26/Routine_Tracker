@@ -53,53 +53,6 @@ const Dashboard = () => {
 
     const greeting = getGreeting();
 
-    // Punishment Capture Logic
-    const fileInputRef = React.useRef(null);
-    const [uploadingId, setUploadingId] = React.useState(null);
-
-    const handleImageCapture = (e) => {
-        const file = e.target.files[0];
-        if (file && uploadingId) {
-            // Compress/Resize image to avoid localStorage limits
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-
-                    // Resize to max 300px width/height
-                    const MAX_SIZE = 300;
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > height) {
-                        if (width > MAX_SIZE) {
-                            height *= MAX_SIZE / width;
-                            width = MAX_SIZE;
-                        }
-                    } else {
-                        if (height > MAX_SIZE) {
-                            width *= MAX_SIZE / height;
-                            height = MAX_SIZE;
-                        }
-                    }
-
-                    canvas.width = width;
-                    canvas.height = height;
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress quality
-                    completePunishment(uploadingId, dataUrl);
-                    setUploadingId(null);
-                    if (fileInputRef.current) fileInputRef.current.value = ''; // Reset input
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-    };
-
     return (
         <div>
             <header className="mb-6">
@@ -303,16 +256,6 @@ const Dashboard = () => {
                                     </button>
                                 </div>
 
-                                {/* Hidden File Input for Capture */}
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    capture="environment"
-                                    className="hidden"
-                                    ref={fileInputRef}
-                                    onChange={handleImageCapture}
-                                />
-
                                 {/* Content */}
                                 <AnimatePresence>
                                     {punishmentCardExpanded && (
@@ -354,12 +297,11 @@ const Dashboard = () => {
                                                                 <button
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
-                                                                        setUploadingId(punishment.id);
-                                                                        if (fileInputRef.current) fileInputRef.current.click();
+                                                                        completePunishment(punishment.id);
                                                                     }}
-                                                                    className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-xs font-bold rounded-lg shadow-md shadow-red-200 dark:shadow-none transition-all active:scale-95 flex items-center gap-1"
+                                                                    className="shrink-0 px-3 py-1.5 bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white text-xs font-bold rounded-lg shadow-md shadow-red-200 dark:shadow-none transition-all active:scale-95"
                                                                 >
-                                                                    <span>📸</span> Done
+                                                                    Done
                                                                 </button>
                                                             </div>
                                                         </motion.div>

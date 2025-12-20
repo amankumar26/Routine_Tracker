@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { User, Bell, Shield, Moon, Edit2, Check, X } from 'lucide-react';
 import { useRoutine } from '../context/RoutineContext';
-import { format, subDays } from 'date-fns';
 
 const Settings = () => {
     const { user, updateUserName, notificationsEnabled, toggleNotifications, darkMode, toggleDarkMode } = useRoutine();
@@ -142,11 +141,11 @@ const Settings = () => {
                     <h4 className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Debug / Testing</h4>
                     <button
                         onClick={() => {
-                            // Use consistent local date formatting
-                            const yesterday = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-
-                            if (window.confirm(`Simulate starting a new day (Today vs Last: ${yesterday})? This will reload the app.`)) {
-                                localStorage.setItem('lastOpenDate', yesterday);
+                            if (window.confirm('This will simulate a new day where you missed tasks. The app will reload. Continue?')) {
+                                // Set last open date to yesterday
+                                const yesterday = new Date();
+                                yesterday.setDate(yesterday.getDate() - 1);
+                                localStorage.setItem('lastOpenDate', yesterday.toISOString().split('T')[0]);
 
                                 // Ensure tasks are NOT marked done so punishment logic triggers
                                 const routines = JSON.parse(localStorage.getItem('routines') || '[]');
@@ -156,7 +155,7 @@ const Settings = () => {
                                 window.location.reload();
                             }
                         }}
-                        className="px-4 py-2 text-sm font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-all active:scale-95 touch-manipulation w-full sm:w-auto"
+                        className="px-4 py-2 text-sm font-medium text-amber-600 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-colors w-full sm:w-auto"
                     >
                         Simulate "Missed Day" (Trigger Punishment)
                     </button>

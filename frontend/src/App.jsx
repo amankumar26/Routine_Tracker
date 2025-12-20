@@ -31,45 +31,10 @@ const AppContent = () => {
   );
 };
 
-class ErrorBoundary extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false };
-  }
-
-  static getDerivedStateFromError(error) {
-    return { hasError: true };
-  }
-
-  componentDidCatch(error, errorInfo) {
-    console.error("ErrorBoundary caught an error", error, errorInfo);
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="flex items-center justify-center min-h-screen bg-red-50 text-red-600 p-6 text-center">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Something went wrong.</h1>
-            <p className="mb-4">The app encountered a critical error.</p>
-            <button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-600 text-white rounded-lg">
-              Reload App
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
 function App() {
   return (
     <RoutineProvider>
-      <ErrorBoundary>
-        <AppContent />
-      </ErrorBoundary>
+      <AppContent />
     </RoutineProvider>
   );
 }

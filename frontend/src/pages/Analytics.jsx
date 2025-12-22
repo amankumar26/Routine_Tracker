@@ -1,7 +1,7 @@
 import React from 'react';
 import { useRoutine } from '../context/RoutineContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area, Cell } from 'recharts';
-import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth, isBefore, isAfter } from 'date-fns';
+import { format, subDays, startOfMonth, eachDayOfInterval, endOfMonth, isSameDay, startOfWeek, endOfWeek, isSameMonth, isBefore, isAfter, addMonths, subMonths } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, CheckCircle2, Circle, Trophy } from 'lucide-react';
 
@@ -9,6 +9,16 @@ const Analytics = () => {
     const { routines, reminders, deleteReminder } = useRoutine();
     const [selectedDate, setSelectedDate] = React.useState(null);
     const [showInfo, setShowInfo] = React.useState(false);
+
+    const [currentMonth, setCurrentMonth] = React.useState(new Date());
+
+    const handlePrevMonth = () => {
+        setCurrentMonth(prev => subMonths(prev, 1));
+    };
+
+    const handleNextMonth = () => {
+        setCurrentMonth(prev => addMonths(prev, 1));
+    };
 
     // --- Data Preparation for Charts ---
 
@@ -316,15 +326,29 @@ const Analytics = () => {
                     </div>
                 </div>
 
-                {/* Calendar Style Streak (Current Month) */}
+                {/* Calendar Style Streak (Navigable) */}
                 <div className="bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2 flex flex-col items-center justify-between hover:shadow-md dark:hover:shadow-gray-900/50 transition-all duration-300 group">
-                    <div className="flex flex-col items-center mb-6">
-                        <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center justify-between w-full max-w-2xl mb-6">
+                        <button
+                            onClick={handlePrevMonth}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6" /></svg>
+                        </button>
+
+                        <div className="flex items-center gap-2">
                             <span className="text-2xl animate-pulse">📅</span>
                             <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                                {format(new Date(), 'MMMM yyyy')}
+                                {format(currentMonth, 'MMMM yyyy')}
                             </span>
                         </div>
+
+                        <button
+                            onClick={handleNextMonth}
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+                        </button>
                     </div>
 
                     <div className="w-full max-w-2xl">
@@ -341,8 +365,8 @@ const Analytics = () => {
                         <div className="grid grid-cols-7 gap-2">
                             {(() => {
                                 const today = new Date();
-                                const monthStart = startOfMonth(today);
-                                const monthEnd = endOfMonth(today);
+                                const monthStart = startOfMonth(currentMonth);
+                                const monthEnd = endOfMonth(currentMonth);
                                 const startDate = startOfWeek(monthStart);
                                 const endDate = endOfWeek(monthEnd);
                                 const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
@@ -365,10 +389,6 @@ const Analytics = () => {
                                     // Safety check: ensure reminders is an array
                                     const safeReminders = Array.isArray(reminders) ? reminders : [];
                                     const hasReminders = safeReminders.some(r => r.date === dateStr);
-
-                                    const isPastDate = isBefore(date, new Date()) || isSameDay(date, new Date());
-
-
 
                                     return (
                                         <div
